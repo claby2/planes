@@ -2,8 +2,9 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 
+pub const MAXIMUM_OFFSET: f32 = 20.0;
+pub const ALTITUDE: f32 = 10.0;
 const ACCELERATION: f32 = 25.0;
-const MAXIMUM_OFFSET: f32 = 20.0;
 
 #[derive(Debug)]
 pub struct PlanePlugin;
@@ -25,7 +26,10 @@ impl Plugin for PlanePlugin {
 
 fn setup_plane(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
-        .spawn_bundle((Transform::default(), GlobalTransform::identity()))
+        .spawn_bundle((
+            Transform::from_xyz(0.0, ALTITUDE, 0.0),
+            GlobalTransform::identity(),
+        ))
         .with_children(|children| {
             children.spawn_scene(asset_server.load("plane.glb#Scene0"));
         })
@@ -67,7 +71,7 @@ fn move_plane(time: Res<Time>, mut plane: Query<(&mut Transform, &mut Plane), Wi
         .clamp(-MAXIMUM_OFFSET, MAXIMUM_OFFSET);
 
     // Update y translation relative to x translation
-    transform.translation.y = 0.01 * transform.translation.x.powi(2);
+    transform.translation.y = ALTITUDE + 0.01 * transform.translation.x.powi(2);
 }
 
 fn rotate_plane(mut transform: Query<&mut Transform, With<Plane>>) {
