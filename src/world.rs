@@ -1,19 +1,24 @@
+use crate::{obstacle, plane::MAXIMUM_OFFSET};
 use bevy::prelude::*;
+use rand::{thread_rng, Rng};
 
-use crate::plane::MAXIMUM_OFFSET;
+const CLEAR_COLOR: Color = Color::rgb(0.43, 0.80, 0.98);
 
-const TILE_SIZE: f32 = 2.0 * MAXIMUM_OFFSET;
-const TILE_SPEED: f32 = 100.0;
+pub const NUMBER_OF_TILES: u8 = 10;
+pub const TILE_SIZE: f32 = 2.0 * MAXIMUM_OFFSET;
+pub const TILE_SPEED: f32 = 100.0;
+pub const TILE_INTERPOLATION: f32 = 0.08;
 const TILE_COLOR: Color = Color::rgb(0.65, 0.8, 0.44);
-const NUMBER_OF_TILES: u8 = 10;
+const COIN_SPAWN_PROBABILITY: f64 = 0.5;
 
 #[derive(Debug)]
 pub struct WorldPlugin;
 
 #[derive(Debug)]
-struct TileHandles {
-    mesh: Handle<Mesh>,
-    material: Handle<StandardMaterial>,
+struct WorldHandles {
+    tile_mesh: Handle<Mesh>,
+    tile_material: Handle<StandardMaterial>,
+    obstacle_scene: Handle<Scene>,
 }
 
 #[derive(Component)]
@@ -25,6 +30,7 @@ fn spawn_tile(
     material: Handle<StandardMaterial>,
     tile_number: u8,
 ) {
+    // Spawn base plane
     commands
         .spawn_bundle(PbrBundle {
             mesh,
@@ -35,9 +41,17 @@ fn spawn_tile(
         .insert(Tile);
 }
 
+fn spawn_objects(commands: &mut Commands, obstacle_scene: Handle<Scene>, tile_number: u8) {
+    let mut rng = thread_rng();
+    if rng.gen_bool(COIN_SPAWN_PROBABILITY) {
+        obstacle::spawn_obstacle(commands, obstacle_scene, tile_number);
+    }
+}
+
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_world)
+        app.insert_resource(ClearColor(CLEAR_COLOR))
+            .add_startup_system(setup_world)
             .add_system(move_tiles)
             .add_system(replace_tile);
     }
@@ -47,6 +61,7 @@ fn setup_world(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
 ) {
     let tile_mesh = meshes.add(Mesh::from(shape::Plane { size: TILE_SIZE }));
     let tile_material = materials.add(StandardMaterial {
@@ -73,14 +88,15 @@ fn setup_world(
     });
 
     // Save tile handles as resource for later use
-    commands.insert_resource(TileHandles {
-        mesh: tile_mesh,
-        material: tile_material,
+    commands.insert_resource(WorldHandles {
+        tile_mesh,
+        tile_material,
+        obstacle_scene: asset_server.load("obstacle.glb#Scene0"),
     });
 
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
-        brightness: 0.4,
+        brightness: 1.0,
     });
 }
 
@@ -89,13 +105,15 @@ fn move_tiles(time: Res<Time>, mut tiles: Query<&mut Transform, With<Tile>>) {
         tile.translation.z += TILE_SPEED * time.delta_seconds();
 
         let target_translation = Vec3::new(tile.translation.x, 0.0, tile.translation.z);
-        tile.translation = tile.translation.lerp(target_translation, 0.08);
+        tile.translation = tile
+            .translation
+            .lerp(target_translation, TILE_INTERPOLATION);
     }
 }
 
 fn replace_tile(
     mut commands: Commands,
-    tile_handles: Res<TileHandles>,
+    world_handles: Res<WorldHandles>,
     tiles: Query<(Entity, &Transform), With<Tile>>,
 ) {
     for (tile_entity, tile) in tiles.iter() {
@@ -104,8 +122,13 @@ fn replace_tile(
             commands.entity(tile_entity).despawn_recursive();
             spawn_tile(
                 &mut commands,
-                tile_handles.mesh.clone(),
-                tile_handles.material.clone(),
+                world_handles.tile_mesh.clone(),
+                world_handles.tile_material.clone(),
+                NUMBER_OF_TILES,
+            );
+            spawn_objects(
+                &mut commands,
+                world_handles.obstacle_scene.clone(),
                 NUMBER_OF_TILES,
             );
         }
