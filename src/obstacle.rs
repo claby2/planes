@@ -28,7 +28,7 @@ pub fn spawn_obstacle(commands: &mut Commands, obstacle_scene: Handle<Scene>, ti
 
 impl Plugin for ObstaclePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(move_obstacles);
+        app.add_system(move_obstacles).add_system(despawn_obstacles);
     }
 }
 
@@ -40,5 +40,17 @@ fn move_obstacles(time: Res<Time>, mut obstacles: Query<&mut Transform, With<Obs
         obstacle.translation = obstacle
             .translation
             .lerp(target_translation, TILE_INTERPOLATION);
+    }
+}
+
+// Despawn obstacles that are out of bounds
+fn despawn_obstacles(
+    mut commands: Commands,
+    obstacles: Query<(Entity, &Transform), With<Obstacle>>,
+) {
+    for (entity, transform) in obstacles.iter() {
+        if transform.translation.z >= TILE_SIZE {
+            commands.entity(entity).despawn_recursive();
+        }
     }
 }
