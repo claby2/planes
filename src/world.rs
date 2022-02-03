@@ -9,7 +9,7 @@ pub const TILE_SIZE: f32 = 2.0 * MAXIMUM_OFFSET;
 pub const TILE_SPEED: f32 = 100.0;
 pub const TILE_INTERPOLATION: f32 = 0.08;
 const TILE_COLOR: Color = Color::rgb(0.65, 0.8, 0.44);
-const COIN_SPAWN_PROBABILITY: f64 = 0.5;
+const OBSTACLE_SPAWN_PROBABILITY: f64 = 0.5;
 
 #[derive(Debug)]
 pub struct WorldPlugin;
@@ -43,7 +43,7 @@ fn spawn_tile(
 
 fn spawn_objects(commands: &mut Commands, obstacle_scene: Handle<Scene>, tile_number: u8) {
     let mut rng = thread_rng();
-    if rng.gen_bool(COIN_SPAWN_PROBABILITY) {
+    if rng.gen_bool(OBSTACLE_SPAWN_PROBABILITY) {
         obstacle::spawn_obstacle(commands, obstacle_scene, tile_number);
     }
 }
