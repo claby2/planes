@@ -1,4 +1,4 @@
-use crate::{obstacle, plane::MAXIMUM_OFFSET};
+use crate::{obstacle, plane::MAXIMUM_OFFSET, AppState};
 use bevy::prelude::*;
 use rand::{thread_rng, Rng};
 
@@ -50,10 +50,12 @@ fn spawn_objects(commands: &mut Commands, obstacle_scene: Handle<Scene>, tile_nu
 
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(ClearColor(CLEAR_COLOR))
-            .add_startup_system(setup_world)
-            .add_system(move_tiles)
-            .add_system(replace_tile);
+        app.add_system_set(SystemSet::on_enter(AppState::Game).with_system(setup_world))
+            .add_system_set(
+                SystemSet::on_update(AppState::Game)
+                    .with_system(move_tiles)
+                    .with_system(replace_tile),
+            );
     }
 }
 
@@ -63,6 +65,8 @@ fn setup_world(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
+    commands.insert_resource(ClearColor(CLEAR_COLOR));
+
     let tile_mesh = meshes.add(Mesh::from(shape::Plane { size: TILE_SIZE }));
     let tile_material = materials.add(StandardMaterial {
         base_color: TILE_COLOR,

@@ -1,5 +1,9 @@
-use crate::plane::ALTITUDE;
-use crate::world::{TILE_INTERPOLATION, TILE_SIZE, TILE_SPEED};
+use crate::{
+    collider::Collider,
+    plane::ALTITUDE,
+    world::{TILE_INTERPOLATION, TILE_SIZE, TILE_SPEED},
+    AppState,
+};
 use bevy::prelude::*;
 use rand::{thread_rng, Rng};
 
@@ -20,15 +24,20 @@ pub fn spawn_obstacle(commands: &mut Commands, obstacle_scene: Handle<Scene>, ti
             ),
             GlobalTransform::identity(),
         ))
-        .with_children(|children| {
-            children.spawn_scene(obstacle_scene);
+        .insert(Collider(3.0))
+        .with_children(|parent| {
+            parent.spawn_scene(obstacle_scene);
         })
         .insert(Obstacle);
 }
 
 impl Plugin for ObstaclePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(move_obstacles).add_system(despawn_obstacles);
+        app.add_system_set(
+            SystemSet::on_update(AppState::Game)
+                .with_system(move_obstacles)
+                .with_system(despawn_obstacles),
+        );
     }
 }
 

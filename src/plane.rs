@@ -1,6 +1,9 @@
-use std::f32::consts::PI;
-
+use crate::{
+    collider::{CollideEvent, Collider},
+    AppState,
+};
 use bevy::prelude::*;
+use std::f32::consts::PI;
 
 pub const MAXIMUM_OFFSET: f32 = 20.0;
 pub const ALTITUDE: f32 = 10.0;
@@ -15,9 +18,13 @@ struct Plane;
 
 impl Plugin for PlanePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_plane)
-            .add_system(control_plane)
-            .add_system(rotate_plane);
+        app.add_system_set(SystemSet::on_enter(AppState::Game).with_system(setup_plane))
+            .add_system_set(
+                SystemSet::on_update(AppState::Game)
+                    .with_system(control_plane)
+                    .with_system(rotate_plane)
+                    .with_system(detect_collision),
+            );
     }
 }
 
@@ -27,8 +34,9 @@ fn setup_plane(mut commands: Commands, asset_server: Res<AssetServer>) {
             Transform::from_xyz(0.0, ALTITUDE, 0.0),
             GlobalTransform::identity(),
         ))
-        .with_children(|children| {
-            children.spawn_scene(asset_server.load("plane.glb#Scene0"));
+        .insert(Collider(3.0))
+        .with_children(|parent| {
+            parent.spawn_scene(asset_server.load("plane.glb#Scene0"));
         })
         .insert(Plane);
 }
@@ -67,4 +75,17 @@ fn rotate_plane(time: Res<Time>, mut transform: Query<&mut Transform, With<Plane
             / (3.0 * MAXIMUM_OFFSET.powi(2))
             + roll_offset,
     );
+}
+
+fn detect_collision(
+    mut state: ResMut<State<AppState>>,
+    plane: Query<Entity, With<Plane>>,
+    mut collide_events: EventReader<CollideEvent>,
+) {
+    let plane = plane.single();
+    for event in collide_events.iter() {
+        if event.entity_a == plane || event.entity_b == plane {
+            state.set(AppState::Menu).unwrap();
+        }
+    }
 }
