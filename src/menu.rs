@@ -19,11 +19,40 @@ fn create_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_bundle(UiCameraBundle::default());
     commands.insert_resource(ClearColor(BACKGROUND_COLOR));
 
+    commands.spawn_bundle(TextBundle {
+        style: Style {
+            position_type: PositionType::Absolute,
+            position: Rect {
+                left: Val::Percent(20.0),
+                right: Val::Auto,
+                top: Val::Percent(10.0),
+                bottom: Val::Auto,
+            },
+            ..Style::default()
+        },
+        text: Text::with_section(
+            "planes",
+            TextStyle {
+                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                font_size: 100.0,
+                ..TextStyle::default()
+            },
+            TextAlignment::default(),
+        ),
+        ..TextBundle::default()
+    });
+
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    left: Val::Percent(20.0),
+                    right: Val::Auto,
+                    top: Val::Percent(30.0),
+                    bottom: Val::Auto,
+                },
                 size: Size::new(Val::Px(150.0), Val::Px(65.0)),
-                margin: Rect::all(Val::Auto),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
                 ..Style::default()
@@ -34,10 +63,10 @@ fn create_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
         .with_children(|parent| {
             parent.spawn_bundle(TextBundle {
                 text: Text::with_section(
-                    "Play",
+                    "play",
                     TextStyle {
                         font: asset_server.load("fonts/FiraSans-Medium.ttf"),
-                        font_size: 20.0,
+                        font_size: 40.0,
                         color: Color::BLACK,
                     },
                     TextAlignment::default(),
