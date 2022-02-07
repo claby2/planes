@@ -84,7 +84,7 @@ fn detect_collision(
 ) {
     let plane = plane.single();
     for event in collide_events.iter() {
-        if event.entity_a == plane || event.entity_b == plane {
+        if event.entity1 == plane || event.entity2 == plane {
             state.set(AppState::Menu).unwrap();
         }
     }

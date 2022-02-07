@@ -9,8 +9,8 @@ struct Visible;
 
 #[derive(Debug)]
 pub struct CollideEvent {
-    pub entity_a: Entity,
-    pub entity_b: Entity,
+    pub entity1: Entity,
+    pub entity2: Entity,
 }
 
 #[derive(Debug)]
@@ -27,16 +27,12 @@ fn detect_collisions(
     mut collide_event: EventWriter<CollideEvent>,
     colliders: Query<(Entity, &GlobalTransform, &Collider)>,
 ) {
-    let colliders: Vec<(Entity, &GlobalTransform, &Collider)> = colliders.iter().collect();
-    for (i, (entity_a, transform_a, collider_a)) in colliders.iter().enumerate() {
-        for (entity_b, transform_b, collider_b) in colliders.iter().skip(i + 1) {
-            let distance = transform_a.translation.distance(transform_b.translation);
-            if distance < collider_a.0 + collider_b.0 {
-                collide_event.send(CollideEvent {
-                    entity_a: *entity_a,
-                    entity_b: *entity_b,
-                });
-            }
+    for [(entity1, transform1, collider1), (entity2, transform2, collider2)] in
+        colliders.iter_combinations()
+    {
+        let distance = transform1.translation.distance(transform2.translation);
+        if distance < collider1.0 + collider2.0 {
+            collide_event.send(CollideEvent { entity1, entity2 });
         }
     }
 }
